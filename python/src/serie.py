@@ -6,6 +6,7 @@ from threading import Lock
 class Serie:
     
     baudrate = 9600
+    nb_tentatives = 6
     
     def __init__(self, id, port):
         
@@ -45,14 +46,14 @@ class Serie:
             #Si on ne recoit pas une trame contenant #RFIDReader au delà, ce n'est pas le bon périphérique
             tentatives = 0
             rep = ""
-            while (len(rep)<2 or not rep[0] == "@") and tentatives < 6:
+            while (len(rep)<2 or not rep[0] == "@") and tentatives < Serie.nb_tentatives:
                 rep = Serie._clean_string(str(serie.readline(),"utf-8"))
                 tentatives += 1
                 time.sleep(0.1)
             
-            if tentatives < 6:
+            if tentatives < Serie.nb_tentatives:
                 #enregistrement du périphérique
-                series[rep[1]] = source
+                series[int(rep[1])] = source
             
                 #évacuation du prompt
                 serie.readline()
@@ -66,6 +67,7 @@ class Serie:
     def communiquer(self, message, destinataire=None):
     
         self.mutex.acquire()
+        time.sleep(0.01)
         
         if destinataire:
             self.serie.write(bytes("@0/"+str(destinataire)+":"+message+"\r","utf-8"))
@@ -76,9 +78,15 @@ class Serie:
         rep = ''
         
         #première trame non vide
-        while rep == '':
+        tentatives = 0
+        while rep == '' and tentatives<Serie.nb_tentatives:
             rep = Serie._clean_string(str(self.serie.readline(),"utf-8"))
             time.sleep(0.1)
+            tentatives += 1
+            
+        if tentatives == Serie.nb_tentatives:
+            self.mutex.release()
+            return ['']
             
         #dernière trame non vide
         while not rep == '':
@@ -89,7 +97,7 @@ class Serie:
         t = 0
         while t < len(reponse):
             #supprime les trames ne respectant pas le format attendu
-            if not reponse[t][:2] == "@"+self.id:
+            if not reponse[t][:2] == "@"+str(self.id):
                 del reponse[t]
             else:
                 #supprime les informations expéditeur/destinataire
@@ -108,7 +116,7 @@ if __name__ == '__main__':
     series = Serie.attribuer()
     print(series)
     
-    id = input("id ?")
+    id = int(input("id ?"))
     lecteur = Serie(id, series[id])
     
     while 1:
