@@ -7,24 +7,22 @@ class Serie:
     
     baudrate = 9600
     
-    def __init__(self):
+    def __init__(self, id, port):
         
         #mutex d'accès à la série
         self.mutex = Lock()
         
         #périphérique série de l'imprimante (une fois la carte trouvée)
-        self.serie = None
+        self.serie = Serial(port, Serie.baudrate, timeout=0.1)
+        self.id = id
 
-        #recherche du port série
-        self.attribuer()
-        
-    def _clean_string(self, chaine):
+    def _clean_string(chaine):
         """
         supprime des caractères spéciaux sur la chaine
         """
         return chaine.replace("\n","").replace("\r","").replace("\0","")         
 
-    def attribuer(self):
+    def attribuer():
         #liste les chemins trouvés dans /dev
         sources = os.popen('ls -1 /dev/ttyUSB* 2> /dev/null').readlines()
         sources.extend(os.popen('ls -1 /dev/ttyACM* 2> /dev/null').readlines())
@@ -32,6 +30,8 @@ class Serie:
         for k in range(len(sources)):
             sources[k] = sources[k].replace("\n","")
             
+        series = {}
+        
         for source in sources:
             serie = Serial(source, Serie.baudrate, timeout=0.1)
 
@@ -44,43 +44,46 @@ class Serie:
             #il faut vider le buffer de 5 lignes. 
             #Si on ne recoit pas une trame contenant #RFIDReader au delà, ce n'est pas le bon périphérique
             tentatives = 0
-            rep = []
-            while (len(rep)<2 or not rep[1] == "#RFIDReader") and tentatives < 6:
-                rep = self._clean_string(str(serie.readline(),"utf-8")).split(":")
+            rep = ""
+            while (len(rep)<2 or not rep[0] == "@") and tentatives < 6:
+                rep = Serie._clean_string(str(serie.readline(),"utf-8"))
                 tentatives += 1
+                time.sleep(0.1)
             
-            if tentatives <= 6:
-                
+            if tentatives < 6:
                 #enregistrement du périphérique
-                self.id = rep[0][1]
-                self.serie = serie
+                series[rep[1]] = source
             
                 #évacuation du prompt
                 serie.readline()
                 
-                #on n'en cherche pas d'autres
-                break
-                
-        if not self.serie:
-            raise Exception("Redbee non trouvée sur la série !")
+        if not series:
+            raise Exception("Aucune Redbee trouvée sur la série !")
+        
+        return series
             
         
-    def communiquer(self, destinataire, message, nb_lignes_reponse):
+    def communiquer(self, message, destinataire=None):
     
-        self.serie.write(bytes("@0/"+str(destinataire)+":"+message+"\r","utf-8"))
+        self.mutex.acquire()
+        
+        if destinataire:
+            self.serie.write(bytes("@0/"+str(destinataire)+":"+message+"\r","utf-8"))
+        else:
+            self.serie.write(bytes("@0:"+message+"\r","utf-8"))
         
         reponse = []
         rep = ''
         
         #première trame non vide
         while rep == '':
-            rep = self._clean_string(str(self.serie.readline(),"utf-8"))
+            rep = Serie._clean_string(str(self.serie.readline(),"utf-8"))
             time.sleep(0.1)
             
         #dernière trame non vide
         while not rep == '':
             reponse.append(rep)
-            rep = self._clean_string(str(self.serie.readline(),"utf-8"))
+            rep = Serie._clean_string(str(self.serie.readline(),"utf-8"))
             
         #trames ayant du sens
         t = 0
@@ -89,23 +92,34 @@ class Serie:
             if not reponse[t][:2] == "@"+self.id:
                 del reponse[t]
             else:
+                #supprime les informations expéditeur/destinataire
+                reponse[t] = "".join(reponse[t].split(":")[1:])
                 t += 1
             
         #supprime les doublons
         reponse = list(set(reponse))
         
+        self.mutex.release()
         return reponse
         
         
-serie = Serie()
-
-while 1:
-    ordre = input(">")
+if __name__ == '__main__':
+    #affichage des Redbee trouvées
+    series = Serie.attribuer()
+    print(series)
     
-    #sortie
-    if ordre == "q":
-        break
+    id = input("id ?")
+    lecteur = Serie(id, series[id])
+    
+    while 1:
+        ordre = input(">")
         
-    if not ordre == "":
-        print(serie.communiquer(serie.id, ordre, 1))
-    
+        #sortie
+        if ordre == "q":
+            break
+            
+        elif ordre == "ping":
+            print(lecteur.communiquer(ordre))
+        else:
+            print(lecteur.communiquer(ordre, id))
+        
