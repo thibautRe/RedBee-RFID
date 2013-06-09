@@ -42,8 +42,7 @@ class Serie:
             #clean buffer et récupération de l'identifiant
             serie.write(bytes("@0:ping\r","utf-8"))
             
-            #il faut vider le buffer de 5 lignes. 
-            #Si on ne recoit pas une trame contenant #RFIDReader au delà, ce n'est pas le bon périphérique
+            #il faut parfois vider quelques lignes du buffer
             tentatives = 0
             rep = ""
             while (len(rep)<2 or not rep[0] == "@") and tentatives < Serie.nb_tentatives:

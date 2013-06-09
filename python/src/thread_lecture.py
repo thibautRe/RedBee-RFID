@@ -9,10 +9,10 @@ def check(lecteur):
             statut = rep[0].split(' ')[0]
             if statut == "TACK":
                 #étiquette reconnue
-                print("\bétiquette OK! (s pour la supprimer)\n>", end='')
+                print("\bétiquette OK! : "+rep[0][5:]+" (s pour la supprimer)\n>", end='')
             elif statut == "TNACK":
                 #étiquette non reconnue
-                print("\bétiquette non reconnue ! (a pour l'ajouter)\n>", end='')
+                print("\bétiquette non reconnue ! : "+rep[0][6:]+" (a pour l'ajouter)\n>", end='')
                 
         time.sleep(0.1)
     
