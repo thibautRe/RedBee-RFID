@@ -57,6 +57,9 @@ class Serie:
                 #évacuation du prompt
                 serie.readline()
                 
+                #cloture
+                serie.close()
+                
         if not series:
             raise Exception("Aucune Redbee trouvée sur la série !")
         
