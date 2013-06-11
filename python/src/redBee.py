@@ -33,20 +33,33 @@ class AbstractRedBee:
         """
         
         def check(lecteur):
-            while 1:
-                rep = lecteur.communiquer('')
+            while lecteur.actif:
+                try:
+                    #vérification de la présence du lecteur et lecture éventuelle d'un badge
+                    rep = lecteur.serie.communiquer('')
+                except: break
+                
                 if rep and rep[0]:
                     statut = rep[0].split(' ')[0]
                     if statut == "TACK":
                         #étiquette reconnue
-                        print("\bétiquette OK! : "+rep[0][5:]+" (s pour la supprimer)\n>", end='')
+                        print("\rétiquette OK! : "+rep[0][5:]+" (s pour la supprimer)\n>", end='')
                     elif statut == "TNACK":
                         #étiquette non reconnue
-                        print("\bétiquette non reconnue ! : "+rep[0][6:]+" (a pour l'ajouter)\n>", end='')
+                        print("\rétiquette non reconnue ! : "+rep[0][6:]+" (a pour l'ajouter)\n>", end='')
                 time.sleep(0.1)
         
-        th = threading.Thread(None, check, None, (self.serie,))
+        self.actif = True
+        th = threading.Thread(None, check, None, (self,))
         th.start()
+        
+    def desinscrire(self):
+        """
+        Ferme la série associée au lecteur
+        """
+        self.actif = False
+        self.serie.fermer()
+        
 
 class RedBeeSerie(AbstractRedBee) :
     def __init__(self, id, chemin) :

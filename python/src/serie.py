@@ -24,6 +24,7 @@ class Serie:
         return chaine.replace("\n","").replace("\r","").replace("\0","")         
 
     def attribuer():
+        print("Détection des lecteurs présents...")
         #liste les chemins trouvés dans /dev
         sources = os.popen('ls -1 /dev/ttyUSB* 2> /dev/null').readlines()
         sources.extend(os.popen('ls -1 /dev/ttyACM* 2> /dev/null').readlines())
@@ -111,6 +112,11 @@ class Serie:
         
         self.mutex.release()
         return reponse
+    
+    def fermer(self):
+        self.mutex.acquire()
+        self.serie.close()
+        self.mutex.release()
         
         
 if __name__ == '__main__':

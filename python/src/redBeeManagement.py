@@ -10,6 +10,14 @@ class RedBees(object) :
         """
         RedBees.redbees.append(redBee)
             
+    def removeAll():
+        """
+        Supprime touts les lecteurs
+        """
+        print("Suppression de tous les lecteurs...")
+        for redBee in RedBees.redbees:
+            RedBees.removeRedBee(redBee)
+                
     def removeRedBee(redBee) :
         """
         Enlève une redBee du tableau.
@@ -18,8 +26,10 @@ class RedBees(object) :
         if type(redBee) == int :
             for id, redBee_ in enumerate(RedBees.redbees) :
                 if redBee_.getId() == redBee :
-                    del RedBees.redbees[id]
+                    RedBees.removeRedBee(redBee_)
+                    return
         else :
+            redBee.desinscrire()
             RedBees.redbees.remove(redBee)
                
     def __new__(RedBees, id):
@@ -72,6 +82,7 @@ class RedBees(object) :
         else:
             print("Les lecteurs " + "".join([str(redBee.getId()) for redBee in RedBees.redbees]) + " ont été activés.")
 
+        
 if __name__ == "__main__" :
     redBee1 = redBee.RedBee(5, "oooo")
     RedBees.addRedBee(redBee1)
