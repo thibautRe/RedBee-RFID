@@ -36,3 +36,5 @@ nosetests.xml
 
 # python
 *.pyc
+
+projets

@@ -10,19 +10,7 @@ sys.path.insert(0, os.path.join(chemin, "src/"))
 #modules du projet
 import redBeeManagement
 
-def scan_lecteurs():
-    redBeeManagement.RedBees.readers_survey()
-        
-    if len(redBeeManagement.RedBees.listing()) == 1:
-        unique = True
-        print("Vous vous adressez au lecteur " + str(redBeeManagement.RedBees.listing()[0].getId()) + " (le seul trouvé)")
-        lecteur = redBeeManagement.RedBees.listing()[0]
-    else:
-        unique = False
-        lecteur = None
-    return unique, lecteur
-
-unique, lecteur = scan_lecteurs()
+unique, lecteur = redBeeManagement.scan_lecteurs()
     
 #envoi d'autres requetes
 while 1:
